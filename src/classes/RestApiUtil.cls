@@ -3,60 +3,20 @@ public with sharing class RestApiUtil {
 
 // /services/data/v41.0/tooling/query?q=SELECT+id,+lastmodifieddate,+lastModifiedByName+FROM+flow
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   public static List<FlowSummary> getAllFlows(Integer pLimit){
-       List<FlowClass> lstFlowClass;
-       List<FlowSummary> lstRetVal;
-
-       try{
+   public static List<FlowClass> getLatestFlowsDetailed(Integer pLimit){
+       List<FlowClass> lstRetVal;
+        //reggie, I'm going to let the caller catch and handle... 
+       //try{
             List<Object> recordList = getBaseObjectList(pLimit);
-            lstFlowClass = getFlowClassList(recordList, pLimit);
-            lstRetVal =  getFlowSummaryList(lstFlowClass);
+            lstRetVal = getFlowClassList(recordList, pLimit);
            
-       }catch(Exception ex){
+       //}catch(Exception ex){
            //reggie, I need to get this error back to the Component....
-           System.debug(LoggingLevel.warn, 'reggie ex: '+ ex + ' STACKTRACE: '+ex.getStackTraceString());
-       }
+       //    System.debug(LoggingLevel.warn, 'reggie ex: '+ ex + ' STACKTRACE: '+ex.getStackTraceString());
+       //}
         return lstRetVal;
    }
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private static List<FlowSummary> getFlowSummaryList(List<FlowClass> pLstFlowClass){
-        List<FlowSummary> lstRetVal = new List<FlowSummary>();
-        Set<String> lstUserIds = new Set<String>();
-        Map<ID, User> mapIdToUser = new Map<ID,User>();
-        for (FlowClass myFC:pLstFlowClass){
-            System.debug(LoggingLevel.warn, 'reggie myFC: '+myFC);
-            lstUserIds.add(myFC.LastModifiedById); 
-        }
-
-        mapIdToUser.putAll([select id, name from user where id in :lstUserIds]);
-
-        //
-        for (FlowClass myFC:pLstFlowClass){
-            //reggie, I don't understand why there's a list of processMetadataValues, when that's where I need to get my Object type from????
-            FlowSummary myFS = new FlowSummary();
-            myFS.recId = myFC.Id;
-            myFS.Name = myFC.MasterLabel;
-            myFS.Description = myFC.Description;
-            myFS.Status = myFC.Status;
-            myFS.LastModifiedDate = myFC.Lastmodifieddate.left(19);
-            myFS.LastModifiedByName = mapIdToUser.get(myFC.LastModifiedById).name;
-            System.debug('reggie myFC.MetaData.processMetadataValues.size(): '+myFC.MetaData.processMetadataValues.size());
-            for (FlowClass.FlowMetadataValue myFMV:myFC.MetaData.processMetadataValues){
-                System.debug('reggie myFMV: '+myFMV);
-                if (myFMV.name=='ObjectType'){
-                    myFS.ObjectName = myFMV.value.stringValue;
-                    //break;
-                }
-            }
-            //myFS.ObjectName = myFC.MetaData.processMetadataValues[0].stringValue;
-            myFS.FullName = myFC.FullName;
-            lstRetVal.add(myFS);
-
-            System.debug(LoggingLevel.warn, 'reggie myFS: '+myFS);
-        }
-        return lstRetVal;
-
-   }
+  
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static List<FlowClass> getFlowClassList(List<Object> pLstObjects, Integer pLimit){
         List<FlowClass> lstRetVal = new List<FlowClass>();
@@ -114,7 +74,7 @@ public with sharing class RestApiUtil {
         //NOTE! that it really doesn't cost me much to retrieve ALL of the flow IDs, I can limit the number later
         //great, now see if we can de-serialize this into flows
 
-
+        System.debug(LoggingLevel.warn, 'reggie strAllFlowIds: '+strAllFlowIds);
         Map<String, Object> mapFlow = (Map<String, Object>)JSON.deserializeUntyped(strAllFlowIds);
 
         lstRetVal = (List<Object>)mapFlow.get('records');
@@ -153,22 +113,5 @@ public with sharing class RestApiUtil {
        //
        return UserInfo.getSessionId();
    }
-   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    Public class FlowSummary{
-        Public String recId;
-        Public String Name;
-        Public String Description;
-        Public String Status;
-        Public String LastModifiedDate;
-        Public String LastModifiedByName;
-        Public String ObjectName;
-        Public String FullName;
-        public FlowSummary(){
-            
-        }
-            
-    }
-	
-
 
 }
