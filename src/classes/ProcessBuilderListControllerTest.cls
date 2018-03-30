@@ -1,8 +1,8 @@
 @isTest (SeeAllData=true)
 public with sharing class ProcessBuilderListControllerTest {
     static testmethod void testGetDetailedFlowSummaryList(){
-        //yeah, this flat out didn't work as my first tooling call failed...perhaps this isn't allowed in test
-        //I'm guessing I'll have to mock it
+        //reggie, yeah, this flat out didn't work as my first tooling call failed...perhaps this isn't allowed in test
+        //I'm guessing I'll have to mock it...you can however copy this and perform execute anonymous on it if you wish
         String strSummaryListSerialized = ProcessBuilderListController.getDetailedFlowSummaryList(10);
         System.assertNotEquals(null, strSummaryListSerialized);
         System.assertNotEquals(0, strSummaryListSerialized.length());
