@@ -17,6 +17,9 @@ public with sharing class RestApiUtil {
     //Metadata notes: capable of bringing back all of the details surrounding a Process Builder such as actions and decisions. 
     //While this class is capable of much in the area of Metadata, my initial interest is in the ObjectType which I believe will be useful for the end user
     
+    //reggie, here's an example of pagination: http://sfdcmonkey.com/2017/01/26/display-record-with-pager-buttons-lightning-component/
+    //reggie, that's probably going to be helpful, but, what happens if they start searching or sorting?????
+
     Private static map<ID,FlowClass> mapIdToFlowClass;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
