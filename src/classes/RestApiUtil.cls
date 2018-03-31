@@ -59,7 +59,17 @@ public with sharing class RestApiUtil {
             String strFlowTrimmed = strThisDetailedFlow.substring(strThisDetailedFlow.indexof('['),strThisDetailedFlow.length()-1);
             lstRetVal.addAll((List<FlowClass>) json.deserialize(strFlowTrimmed, List<FlowClass>.class));
         }
-        return lstRetVal;
+        //great, now we've got the list of detailed records for all the latest versions....note however, that we also have the children from the 
+        //base call.  While in version 1 of this code we're interested in very little metadata fields, we might be interested in more later.
+        //for this reason, I'm wanting to replace all the map base value for the latest version and simply copy their OlderVersions over to thise records... 
+        for (FlowClass myFC:lstRetVal){
+            FlowClass myMapFC = mapIdToFlowClass.get(myFC.Id);
+            if (myMapFC!=null && myMapFC.OlderVersions!=null && myMapFC.OlderVersions.size()>0){
+                myFC.OlderVersions = myMapFC.OlderVersions;
+            }
+            mapIdToFlowClass.put(myFC.id, myFC);
+        } 
+        return mapIdToFlowClass.values();
    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static List<string> getLatestVersionIds(List<FlowClass> pLstFlowClass){
@@ -81,9 +91,6 @@ public with sharing class RestApiUtil {
             String strAllFlows = getJsonGetResponse(strBaseQueryMetadata);
             String strAllFlowsTrimmed = strAllFlows.substring(strAllFlows.indexof('['),strAllFlows.length()-1);
             List<FlowClass> lstLocalFlowClasses = (List<FlowClass>) json.deserialize(strAllFlowsTrimmed, List<FlowClass>.class);
-            for (FlowClass myFC:lstLocalFlowClasses){
-                System.debug('in getBaseFlowClassList with FC: '+myFC);
-            }
             buildParentChildStructure(lstLocalFlowClasses, pLimit);
         }
        return mapIdToFlowClass;
