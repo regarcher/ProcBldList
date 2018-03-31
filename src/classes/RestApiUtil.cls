@@ -21,6 +21,7 @@ public with sharing class RestApiUtil {
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
     public static List<FlowClass> getBaseFlows(Integer pLimit){
+
         return getBaseFlowClassList(pLimit).values();
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,8 +36,7 @@ public with sharing class RestApiUtil {
         //reggie, as I don't want to lose the children
         //reggie, I also want to update mapIdToFlowClass
         List<FlowClass> lstRetVal = new List<FlowClass>();
-        getBaseFlowClassList(pLimit);
-        List<String> listLatestIds = getLatestVersionIds(pLimit);
+        List<String> listLatestIds = getLatestVersionIds(getBaseFlowClassList(pLimit).values());
 
         Integer iLimit = pLimit;
         if (listLatestIds.size()<pLimit){
@@ -62,12 +62,13 @@ public with sharing class RestApiUtil {
         return lstRetVal;
    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private static List<string> getLatestVersionIds(integer pLimit){
+    private static List<string> getLatestVersionIds(List<FlowClass> pLstFlowClass){
         //note that the soql statement sorts by version asc, so we're trusting that these will be in order
         map<String, String> mapFlowNameToId = new map<String, String>();
-        for (FlowClass myFC:getBaseFlowClassList(pLimit).values()){
+        for (FlowClass myFC:pLstFlowClass){
             mapFlowNameToId.put(myFC.MasterLabel, myFC.Id);
         }
+        System.debug('in getLatestVersionIds with mapFlowNameToId.values(): '+mapFlowNameToId.values());
         return mapFlowNameToId.values();
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,14 +81,40 @@ public with sharing class RestApiUtil {
             String strAllFlows = getJsonGetResponse(strBaseQueryMetadata);
             String strAllFlowsTrimmed = strAllFlows.substring(strAllFlows.indexof('['),strAllFlows.length()-1);
             List<FlowClass> lstLocalFlowClasses = (List<FlowClass>) json.deserialize(strAllFlowsTrimmed, List<FlowClass>.class);
-            if (mapIdToFlowClass==null){
-                mapIdToFlowClass = new map<ID,FlowClass>();
-            }
             for (FlowClass myFC:lstLocalFlowClasses){
-                mapIdToFlowClass.put(myFC.ID, myFC);
+                System.debug('in getBaseFlowClassList with FC: '+myFC);
             }
+            buildParentChildStructure(lstLocalFlowClasses, pLimit);
         }
        return mapIdToFlowClass;
+   }
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private static map<ID,FlowClass> buildParentChildStructure(List<FlowClass> pLstFlowClass, integer pLimit){
+       //I'm expecting that this will only get called from the Base query method, Detail queries should only be augmenting the latest versions
+        map<String,List<FlowClass>> mapMasterLabelToOlderVersions =  new map<String,List<FlowClass>>();
+        if (mapIdToFlowClass==null){
+                mapIdToFlowClass = new map<ID,FlowClass>();
+        }
+        for (FlowClass myFC: pLstFlowClass){
+            mapMasterLabelToOlderVersions.put(myFC.MasterLabel, new List<FlowClass>());
+        }
+        List<string> lstLatestVersionIds = getLatestVersionIds(pLstFlowClass);
+        for (FlowClass myFC: pLstFlowClass){
+            if (!lstLatestVersionIds.contains(myFC.Id)){
+                mapMasterLabelToOlderVersions.get(myFC.MasterLabel).add(myFC);
+            }else{
+                //this IS a latest version, so we'll put this one in the Map
+                mapIdToFlowClass.put(myFC.Id, myFC);
+            }
+        }
+        //great, now we have 2 maps, our master latest versions map and a map of the older versions
+        //now let's go put the older versions on the FlowClass.OlderVersions variable
+        for (FlowClass myFC:mapIdToFlowClass.Values()){
+            if (mapMasterLabelToOlderVersions.get(myFC.MasterLabel)!=null && mapMasterLabelToOlderVersions.get(myFC.MasterLabel).size()>0){
+                myFC.OlderVersions = mapMasterLabelToOlderVersions.get(myFC.MasterLabel);
+            }
+        }
+        return mapIdToFlowClass;
    }
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static string getJsonGetResponse(String pApiCall){

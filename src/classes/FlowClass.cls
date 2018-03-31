@@ -19,6 +19,8 @@ public with sharing class FlowClass {
     public String Status;
     public String Lastmodifieddate;
     public String LastModifiedById;
+
+    public List<FlowClass> OlderVersions;
     
     public MetaData MetaData;
     
