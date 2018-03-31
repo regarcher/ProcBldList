@@ -1,26 +1,39 @@
 public with sharing class RestApiUtil {
 //Reg Archer March 16 2018....  
-
-// /services/data/v41.0/tooling/query?q=SELECT+id,+lastmodifieddate,+lastModifiedByName+FROM+flow
-    Private static map<ID,FlowClass> mapIdToFlowClass;
+    //This class is only concerned with bringing back Process Builder Flows (defined by ProcessType = Workflow)
+    //What's the difference between a Base and a Detailed search you ask... 
     
+    //Base search is capable of bringing back a list of flows, but is somewhat limited in that it can't bring back Metadata or FullName
+    
+    //Detailed search will bring back FullName and Metadata as mentioned above, but may only bring back one record at a time.
+    //Note that Salesforce states that "A single Apex transaction can make a maximum of 100 callouts to an HTTP request or an API call."
+    //Here's the question, would we expect that some Salesforce customers are going to have more than 100 different Process Builder processes (not versions)?....I think....Yes
+    //Well, that's a sobering thought.  Sounds like we might need some sort of pagination.  :(
+
+    //FullName notes: In my opinion, you're not missing much with FullName as MasterLabel is available in the base search. 
+    //Here's an example of the difference for version 2 of my Process builder named "Account Update":
+    //FullName: Account_Update-2 MasterLabel: Account Update
+
+    //Metadata notes: capable of bringing back all of the details surrounding a Process Builder such as actions and decisions. 
+    //While this class is capable of much in the area of Metadata, my initial interest is in the ObjectType which I believe will be useful for the end user
+    
+    Private static map<ID,FlowClass> mapIdToFlowClass;
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
     public static List<FlowClass> getBaseFlows(Integer pLimit){
-        //note that the base query will not bring back FullName or Metadata (used to derive ObjectType)
-        //Note that all versions are included here, the caller should parse the children appropriately
         return getBaseFlowClassList(pLimit).values();
     }
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public static List<FlowClass> getLatestFlowsDetailed(Integer pLimit){
-        List<FlowClass> lstRetVal;
-        //I'm going to let the caller catch and handle... 
+        List<FlowClass> lstRetVal; 
         return getLatestDetailedFlowClassList(pLimit);
     }
-  
-      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static List<FlowClass> getLatestDetailedFlowClassList(Integer pLimit){
         //I only care about the most recent version and getLatestVersionIds takes care of this
+        //reggie, I want to design this where all the inactive versions are Base records under the most recent one, this will need to change some in that case
+        //reggie, as I don't want to lose the children
+        //reggie, I also want to update mapIdToFlowClass
         List<FlowClass> lstRetVal = new List<FlowClass>();
         getBaseFlowClassList(pLimit);
         List<String> listLatestIds = getLatestVersionIds(pLimit);
@@ -32,14 +45,10 @@ public with sharing class RestApiUtil {
         //NOTE, that I can't retrieve the Metadata in a massive call, it's got to happen one at a time
         integer i = 0;
         for(string myId:listLatestIds) {
-            System.debug(LoggingLevel.warn, 'myId: '+myId);
             i++;
             if (i>iLimit){
                 break;
             }
-            // https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm
-            //ooooo, this next one is much better!
-            //https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_flow.htm
 
             String strQueryWithMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+fullName,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+Metadata,+lastmodifieddate,+lastModifiedById+FROM+flow+WHERE+id+=+\''+myId+'\'';
             String strThisDetailedFlow = getJsonGetResponse(strQueryWithMetadata);
@@ -48,17 +57,9 @@ public with sharing class RestApiUtil {
             //"Description":"update some dumb field","FullName":"New_Contact-1","ManageableState":"unmanaged","MasterLabel":"New Contact","ProcessType":"Workflow","Status":"Active","VersionNumber":1}]}
             //NOTE, that metadata will be contained within this next trimmed string!
             String strFlowTrimmed = strThisDetailedFlow.substring(strThisDetailedFlow.indexof('['),strThisDetailedFlow.length()-1);
-            //some references
-            //I think this is taking me in the right direction... 
-            //https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm
-            //OK, maybe this one is better.....
-            //https://developer.salesforce.com/forums/?id=906F0000000D8MPIA0
-
             lstRetVal.addAll((List<FlowClass>) json.deserialize(strFlowTrimmed, List<FlowClass>.class));
-            
         }
         return lstRetVal;
-
    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static List<string> getLatestVersionIds(integer pLimit){
@@ -71,11 +72,8 @@ public with sharing class RestApiUtil {
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static map<ID,FlowClass> getBaseFlowClassList(Integer pLimit){
-        //this method will only get called when map<id,FlowClass> is null!
-        //Note that it will get all Workflow(Process builder) flows
-        //and will populate them into the map<id,FlowClass>
-        //note that the base query will not bring back FullName or Metadata (used to derive ObjectType)
-        //Note that all versions are included here
+        //Note that all versions and status are included here
+        //I'm sorting by Version to make life easier on me. I'm expecting the display component to do it's own sorting on LastModifiedDate
         if (mapIdToFlowClass==null || mapIdToFlowClass.size()==0){
             //reggie, I need to include the LIMIT in this query!!!!
             String strBaseQueryMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+lastmodifieddate,+lastModifiedById+FROM+flow+where+ProcessType+=+\'Workflow\'++order+by+VersionNumber+asc';
@@ -86,17 +84,15 @@ public with sharing class RestApiUtil {
                 mapIdToFlowClass = new map<ID,FlowClass>();
             }
             for (FlowClass myFC:lstLocalFlowClasses){
-                System.debug(LoggingLevel.warn, 'reggie myFC: '+myFC);
                 mapIdToFlowClass.put(myFC.ID, myFC);
             }
         }
        return mapIdToFlowClass;
-
    }
-  
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static string getJsonGetResponse(String pApiCall){
        //an example of pApiCall might be: /services/data/v41.0/tooling/query?q=SELECT+id+FROM+flow+WHERE+status+='Active'
+       //and yes, I'm passing soql, but it is a private method, so I'm not too concerned
        Http httpCall = new Http();
        HttpRequest restRequest = new HttpRequest();
        HttpResponse res;
@@ -104,7 +100,6 @@ public with sharing class RestApiUtil {
 
        String sessionId = getSessionId();
        String strUrl = URL.getSalesforceBaseUrl().toExternalForm()+pApiCall;
-       //System.debug(LoggingLevel.warn, 'reggie strUrl: '+strUrl);
 
        restRequest.setEndpoint(strUrl);
        restRequest.setMethod('GET');
@@ -118,12 +113,17 @@ public with sharing class RestApiUtil {
        }
        return responseBody;
    }
-
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static String getSessionId() {
        //NOTE that sessionId can not be printed out on the Debug
-       //
        return UserInfo.getSessionId();
    }
+   /////////////////////////////////////// USEFUL REFERENCES ////////////////////////////////////////////////////////////////
+    //Metadata API Developer Guide - FLOW record definition including sub classes
+    // https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm
+    //Force.com Tooling API - FLOW record definition
+    //https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_flow.htm
+    //Notes on complex JSON deserialization
+    //https://developer.salesforce.com/forums/?id=906F0000000D8MPIA0
 
 }

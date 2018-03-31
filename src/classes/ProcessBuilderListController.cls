@@ -28,7 +28,7 @@ public with sharing class ProcessBuilderListController {
     @AuraEnabled
     public static String getLatestDetailedFlowSummaryList(Integer pLimit){
         //this method will get ALL fields for all most recent versions of Process Builders regardless of status
-        //This would NOT include MasterLabel (Name) or ObjectType (ObjectName)
+        //This would NOT include FullName (FullName) or ObjectType (ObjectName)
         //This begs the question, what field CAN I use to substitute in for MasterLabel?
   
         //The return value will be a JSON serialized string of List<FlowSummary>
