@@ -31,10 +31,8 @@ public with sharing class RestApiUtil {
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static List<FlowClass> getDetailedFlowClassList(Integer pLimit){
-        //I only care about the most recent version and getLatestVersionIds takes care of this
-        //reggie, I want to design this where all the inactive versions are Base records under the most recent one, this will need to change some in that case
-        //reggie, as I don't want to lose the children
-        //reggie, I also want to update mapIdToFlowClass
+        //reggie, I need to come up with a plan for using pLimit
+        //as we know, I can only make 99 of these...any SF customer with more than that will have issues with the way it is today
         List<FlowClass> lstRetVal = new List<FlowClass>();
         //getBaseFlowClassList() will return mapIdToFlowClass and we know that all the Keys on that are just the most recent versions
         List<String> listLatestIdsWithoutDetail = getLatestVersionNotHavingDetail(getBaseFlowClassList().values());
@@ -54,7 +52,6 @@ public with sharing class RestApiUtil {
             String strThisDetailedFlow;
             //we can't make callouts from test, so.... 
             if (!Test.isRunningTest()){
-                system.debug('reggie performing detail callout');
                 strThisDetailedFlow = getJsonGetResponse(strQueryWithMetadata);
             }
             //NOTE, that metadata will be contained within this next trimmed string!
@@ -86,7 +83,6 @@ public with sharing class RestApiUtil {
         for (FlowClass myFC:pLstFlowClass){
             mapFlowNameToId.put(myFC.MasterLabel, myFC.Id);
         }
-        System.debug('in getLatestVersionIds with mapFlowNameToId.values(): '+mapFlowNameToId.values());
         return mapFlowNameToId.values();
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -105,17 +101,14 @@ public with sharing class RestApiUtil {
         //Note that all versions and status are included here
         //I'm sorting by Version to make life easier on me. I'm expecting the display component to do it's own sorting on LastModifiedDate
         if (mapIdToFlowClass==null || mapIdToFlowClass.size()==0){
-            //reggie, I need to include the LIMIT in this query!!!!
             String strBaseQueryMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+lastmodifieddate,+lastModifiedById+FROM+flow+where+ProcessType+=+\'Workflow\'++order+by+VersionNumber+asc';
             String strAllFlows;
             //we can't make callouts from test, so.... 
             if (Test.isRunningTest()){
                 strAllFlows = TestDataFactory.getBaseRestResponse();
             }else{
-                system.debug('reggie performing base callout');
                 strAllFlows = getJsonGetResponse(strBaseQueryMetadata);
             }
-            System.debug('baseResponse: '+strAllFlows);
             String strAllFlowsTrimmed = strAllFlows.substring(strAllFlows.indexof('['),strAllFlows.length()-1);
             List<FlowClass> lstLocalFlowClasses = (List<FlowClass>) json.deserialize(strAllFlowsTrimmed, List<FlowClass>.class);
             buildParentChildStructure(lstLocalFlowClasses);
