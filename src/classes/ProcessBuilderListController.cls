@@ -1,7 +1,8 @@
 public with sharing class ProcessBuilderListController {
     Private static map<ID,User> mapIdToUser;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @AuraEnabled
-    public static String getBaseFlowSummaryList(Integer pLimit){
+    public static String getBaseFlowSummaryList(){
         //Only brings back fields that are available on the base query
         //This would NOT include FullName  or ObjectType
         //Of course name is still available, so objectType (objectName) is really the only deficiency
@@ -9,7 +10,7 @@ public with sharing class ProcessBuilderListController {
         //The return value will be a JSON serialized string of List<FlowSummary>
         String lRetVal;
         try{
-            List<FlowClass> lstAllBaseFlows = RestApiUtil.getBaseFlows(pLimit);
+            List<FlowClass> lstAllBaseFlows = RestApiUtil.getBaseFlows();
             List<FlowSummary> lstFlowSummary = getFlowSummaryList(lstAllBaseFlows);
             lRetVal = JSON.serialize(lstFlowSummary);
         }catch(Exception ex){

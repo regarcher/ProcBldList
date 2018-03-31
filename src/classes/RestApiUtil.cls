@@ -20,23 +20,23 @@ public with sharing class RestApiUtil {
     Private static map<ID,FlowClass> mapIdToFlowClass;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
-    public static List<FlowClass> getBaseFlows(Integer pLimit){
+    public static List<FlowClass> getBaseFlows(){
 
-        return getBaseFlowClassList(pLimit).values();
+        return getBaseFlowClassList().values();
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public static List<FlowClass> getLatestFlowsDetailed(Integer pLimit){
         List<FlowClass> lstRetVal; 
-        return getLatestDetailedFlowClassList(pLimit);
+        return getDetailedFlowClassList(pLimit);
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private static List<FlowClass> getLatestDetailedFlowClassList(Integer pLimit){
+    private static List<FlowClass> getDetailedFlowClassList(Integer pLimit){
         //I only care about the most recent version and getLatestVersionIds takes care of this
         //reggie, I want to design this where all the inactive versions are Base records under the most recent one, this will need to change some in that case
         //reggie, as I don't want to lose the children
         //reggie, I also want to update mapIdToFlowClass
         List<FlowClass> lstRetVal = new List<FlowClass>();
-        List<String> listLatestIds = getLatestVersionIds(getBaseFlowClassList(pLimit).values());
+        List<String> listLatestIds = getLatestVersionIds(getBaseFlowClassList().values());
 
         Integer iLimit = pLimit;
         if (listLatestIds.size()<pLimit){
@@ -49,14 +49,23 @@ public with sharing class RestApiUtil {
             if (i>iLimit){
                 break;
             }
-
             String strQueryWithMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+fullName,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+Metadata,+lastmodifieddate,+lastModifiedById+FROM+flow+WHERE+id+=+\''+myId+'\'';
-            String strThisDetailedFlow = getJsonGetResponse(strQueryWithMetadata);
-            //example of strThisFlow:
-            //{"size":1,"totalSize":1,"done":true,"queryLocator":null,"entityTypeName":"Flow","records":[{"attributes":{"type":"Flow","url":"/services/data/v41.0/tooling/sobjects/Flow/30146000000YUh3AAG"},
-            //"Description":"update some dumb field","FullName":"New_Contact-1","ManageableState":"unmanaged","MasterLabel":"New Contact","ProcessType":"Workflow","Status":"Active","VersionNumber":1}]}
+            String strThisDetailedFlow;
+            //we can't make callouts from test, so.... 
+            if (!Test.isRunningTest()){
+                strThisDetailedFlow = getJsonGetResponse(strQueryWithMetadata);
+            }
             //NOTE, that metadata will be contained within this next trimmed string!
-            String strFlowTrimmed = strThisDetailedFlow.substring(strThisDetailedFlow.indexof('['),strThisDetailedFlow.length()-1);
+            String strFlowTrimmed;
+            if (Test.isRunningTest()){
+                strFlowTrimmed = TestDataFactory.getDetailedTrimmedResponse();
+            }else{
+                strFlowTrimmed = strThisDetailedFlow.substring(strThisDetailedFlow.indexof('['),strThisDetailedFlow.length()-1);
+            }
+            //Junk, when running test I'm getting the following error on this next line:
+            //"System.JSONException: Unexpected character ('m' (code 109)): was expecting comma to separate 
+            //OBJECT entries at [line:1, column:1260] STACKTRACE: Class.System.JSON.deserialize: line 15, column 1"
+            //I had hoped that just serving up the trimmed version would help me, but still No Va
             lstRetVal.addAll((List<FlowClass>) json.deserialize(strFlowTrimmed, List<FlowClass>.class));
         }
         //great, now we've got the list of detailed records for all the latest versions....note however, that we also have the children from the 
@@ -82,21 +91,28 @@ public with sharing class RestApiUtil {
         return mapFlowNameToId.values();
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private static map<ID,FlowClass> getBaseFlowClassList(Integer pLimit){
+   private static map<ID,FlowClass> getBaseFlowClassList(){
         //Note that all versions and status are included here
         //I'm sorting by Version to make life easier on me. I'm expecting the display component to do it's own sorting on LastModifiedDate
         if (mapIdToFlowClass==null || mapIdToFlowClass.size()==0){
             //reggie, I need to include the LIMIT in this query!!!!
             String strBaseQueryMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+lastmodifieddate,+lastModifiedById+FROM+flow+where+ProcessType+=+\'Workflow\'++order+by+VersionNumber+asc';
-            String strAllFlows = getJsonGetResponse(strBaseQueryMetadata);
+            String strAllFlows;
+            //we can't make callouts from test, so.... 
+            if (Test.isRunningTest()){
+                strAllFlows = TestDataFactory.getBaseRestResponse();
+            }else{
+                strAllFlows = getJsonGetResponse(strBaseQueryMetadata);
+            }
+            System.debug('baseResponse: '+strAllFlows);
             String strAllFlowsTrimmed = strAllFlows.substring(strAllFlows.indexof('['),strAllFlows.length()-1);
             List<FlowClass> lstLocalFlowClasses = (List<FlowClass>) json.deserialize(strAllFlowsTrimmed, List<FlowClass>.class);
-            buildParentChildStructure(lstLocalFlowClasses, pLimit);
+            buildParentChildStructure(lstLocalFlowClasses);
         }
        return mapIdToFlowClass;
    }
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private static map<ID,FlowClass> buildParentChildStructure(List<FlowClass> pLstFlowClass, integer pLimit){
+   private static map<ID,FlowClass> buildParentChildStructure(List<FlowClass> pLstFlowClass){
        //I'm expecting that this will only get called from the Base query method, Detail queries should only be augmenting the latest versions
         map<String,List<FlowClass>> mapMasterLabelToOlderVersions =  new map<String,List<FlowClass>>();
         if (mapIdToFlowClass==null){
@@ -141,10 +157,8 @@ public with sharing class RestApiUtil {
        restRequest.setHeader('Authorization', 'Bearer '+ sessionId);
        HttpResponse callResponse;
        String responseBody;
-       if(!Test.isRunningTest()){
-           callResponse = httpCall.send(restRequest);
-           responseBody = callResponse.getBody();
-       }
+        callResponse = httpCall.send(restRequest);
+        responseBody = callResponse.getBody();
        return responseBody;
    }
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
