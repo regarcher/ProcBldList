@@ -54,6 +54,7 @@ public with sharing class RestApiUtil {
             String strThisDetailedFlow;
             //we can't make callouts from test, so.... 
             if (!Test.isRunningTest()){
+                system.debug('reggie performing detail callout');
                 strThisDetailedFlow = getJsonGetResponse(strQueryWithMetadata);
             }
             //NOTE, that metadata will be contained within this next trimmed string!
@@ -111,6 +112,7 @@ public with sharing class RestApiUtil {
             if (Test.isRunningTest()){
                 strAllFlows = TestDataFactory.getBaseRestResponse();
             }else{
+                system.debug('reggie performing base callout');
                 strAllFlows = getJsonGetResponse(strBaseQueryMetadata);
             }
             System.debug('baseResponse: '+strAllFlows);
@@ -142,6 +144,7 @@ public with sharing class RestApiUtil {
         //great, now we have 2 maps, our master latest versions map and a map of the older versions
         //now let's go put the older versions on the FlowClass.OlderVersions variable
         for (FlowClass myFC:mapIdToFlowClass.Values()){
+            myFC.hasDetail = false;
             if (mapMasterLabelToOlderVersions.get(myFC.MasterLabel)!=null && mapMasterLabelToOlderVersions.get(myFC.MasterLabel).size()>0){
                 myFC.OlderVersions = mapMasterLabelToOlderVersions.get(myFC.MasterLabel);
             }
