@@ -1,16 +1,14 @@
 public with sharing class FlowClass {
-    //reggie, hmmmmm, there are a few ways to do this
-    //1. type it all in by hand
-    //2. see if my print out will do it for me and I can do some copy-paste
-    //Both of the options above fall prey to metadata versions.  I doubt highly that I can
-    //dymamically create a class and use it on the fly....but....what are my options for describe?
-    //NONE as this fails: /services/data/v41.0/sobjects/Flow/describe/
-    //So, it seems I'm stuck with the API guide
-    //https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm
-    //also helpful is the Flow and Flow definitions .. 
-    //https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_flow.htm
-    ////https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_flowdefinition.htm
-	//   
+    //References:
+        //Metadata API Developer Guide - FLOW record definition including sub classes
+        // https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm
+        //Force.com Tooling API - FLOW record definition
+        //https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_flow.htm
+        //Notes on complex JSON deserialization
+        //https://developer.salesforce.com/forums/?id=906F0000000D8MPIA0
+    
+    //NOTE that I typed/copy pasted these here....there is probably a much easier way....maybe I should have generated from a soap wsdl?
+
 	public String Id;
     public String Description;
     public String FullName;
@@ -163,10 +161,10 @@ public with sharing class FlowClass {
     }   
     public class FlowWait{
     }   
-    //reggie, here's an example of what Metadata looks like..... 
+
+//here's an example of what Metadata looks like..... 
 /*
 [{"attributes":{"type":"Flow","url":"/services/data/v41.0/tooling/sobjects/Flow/30146000000YUh3AAG"},"Description":"update some dumb field","FullName":"New_Contact-1","ManageableState":"unmanaged","MasterLabel":"New Contact","ProcessType":"Workflow","Status":"Active","VersionNumber":1,
-    
 "Metadata":{
         "actionCalls":[],
         "apexPluginCalls":[],
@@ -243,8 +241,5 @@ public with sharing class FlowClass {
 			{"dataType":"DateTime","description":null,"isCollection":false,"isInput":false,"isOutput":false,"name":"myVariable_waitStartTimeVariable","objectType":null,"processMetadataValues":[],"scale":null,"value":{"booleanValue":null,"dateTimeValue":null,"dateValue":null,"elementReference":"$Flow.CurrentDateTime","numberValue":null,"stringValue":null}}
 		],
 		"waits":[]}}]
-
-
-
 */
 }
