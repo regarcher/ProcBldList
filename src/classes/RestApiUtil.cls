@@ -36,15 +36,16 @@ public with sharing class RestApiUtil {
         //reggie, as I don't want to lose the children
         //reggie, I also want to update mapIdToFlowClass
         List<FlowClass> lstRetVal = new List<FlowClass>();
-        List<String> listLatestIds = getLatestVersionIds(getBaseFlowClassList().values());
+        //getBaseFlowClassList() will return mapIdToFlowClass and we know that all the Keys on that are just the most recent versions
+        List<String> listLatestIdsWithoutDetail = getLatestVersionNotHavingDetail(getBaseFlowClassList().values());
 
         Integer iLimit = pLimit;
-        if (listLatestIds.size()<pLimit){
-            iLimit = listLatestIds.size();
+        if (listLatestIdsWithoutDetail.size()<pLimit){
+            iLimit = listLatestIdsWithoutDetail.size();
         }
         //NOTE, that I can't retrieve the Metadata in a massive call, it's got to happen one at a time
         integer i = 0;
-        for(string myId:listLatestIds) {
+        for(string myId:listLatestIdsWithoutDetail) {
             i++;
             if (i>iLimit){
                 break;
@@ -58,14 +59,10 @@ public with sharing class RestApiUtil {
             //NOTE, that metadata will be contained within this next trimmed string!
             String strFlowTrimmed;
             if (Test.isRunningTest()){
-                strFlowTrimmed = TestDataFactory.getDetailedTrimmedResponse();
+                strFlowTrimmed = TestDataFactory.getDetailedTrimmedResponse2(); 
             }else{
                 strFlowTrimmed = strThisDetailedFlow.substring(strThisDetailedFlow.indexof('['),strThisDetailedFlow.length()-1);
             }
-            //Junk, when running test I'm getting the following error on this next line:
-            //"System.JSONException: Unexpected character ('m' (code 109)): was expecting comma to separate 
-            //OBJECT entries at [line:1, column:1260] STACKTRACE: Class.System.JSON.deserialize: line 15, column 1"
-            //I had hoped that just serving up the trimmed version would help me, but still No Va
             lstRetVal.addAll((List<FlowClass>) json.deserialize(strFlowTrimmed, List<FlowClass>.class));
         }
         //great, now we've got the list of detailed records for all the latest versions....note however, that we also have the children from the 
@@ -76,6 +73,7 @@ public with sharing class RestApiUtil {
             if (myMapFC!=null && myMapFC.OlderVersions!=null && myMapFC.OlderVersions.size()>0){
                 myFC.OlderVersions = myMapFC.OlderVersions;
             }
+            myFC.hasDetail = true;
             mapIdToFlowClass.put(myFC.id, myFC);
         } 
         return mapIdToFlowClass.values();
@@ -89,6 +87,17 @@ public with sharing class RestApiUtil {
         }
         System.debug('in getLatestVersionIds with mapFlowNameToId.values(): '+mapFlowNameToId.values());
         return mapFlowNameToId.values();
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private static List<string> getLatestVersionNotHavingDetail(List<FlowClass> pLstFlowClass){
+        //note that the soql statement sorts by version asc, so we're trusting that these will be in order
+        List<string> lstRetVal = new List<String>();
+        for (FlowClass myFC:pLstFlowClass){
+            if (myFC.hasDetail==false){
+                lstRetVal.add(myFC.Id);
+            }
+        }
+       return lstRetVal;
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static map<ID,FlowClass> getBaseFlowClassList(){
