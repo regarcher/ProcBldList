@@ -22,13 +22,13 @@ public with sharing class ProcessBuilderListController {
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @AuraEnabled
-    public static String getDetailedFlowSummaryList(Integer pLimit){
+    public static String getDetailedFlowSummaryList(){
         //This WILL include FullName (FullName) or ObjectType (ObjectName) for the Latest version only
         //OlderVersions may exist under the Latest Version, but they will not have ObjectName or FullName
         //The return value will be a JSON serialized string of List<FlowSummary>
         String lRetVal;
         Try{
-            List<FlowClass> lstFlowClass = RestApiUtil.getLatestFlowsDetailed(pLimit);
+            List<FlowClass> lstFlowClass = RestApiUtil.getLatestFlowsDetailed();
             List<FlowSummary> lstFlowSummary = getFlowSummaryList(lstFlowClass);
             debugPrintResults(lstFlowSummary);
             lRetVal = JSON.serialize(lstFlowSummary);

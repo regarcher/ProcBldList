@@ -8,11 +8,12 @@ public with sharing class RestApiUtil {
     //Detailed search will bring back FullName and Metadata as mentioned above, but may only bring back one record at a time.
     //Note that Salesforce states that "A single Apex transaction can make a maximum of 100 callouts to an HTTP request or an API call."
     //Here's the question, would we expect that some Salesforce customers are going to have more than 100 different Process Builder processes (not versions)?....I think....Yes
-    //Well, that's a sobering thought.  Sounds like we might need some sort of pagination.  :(
+    //Well, that's a sobering thought.  Sounds like we might need some sort of pagination or filtering.  :(
+    //One advantage of this design though is that even if you run into the limit, you'll still have the base values in the final list
 
     //FullName notes: In my opinion, you're not missing much with FullName as MasterLabel is available in the base search. 
     //Here's an example of the difference for version 2 of my Process builder named "Account Update":
-    //FullName: Account_Update-2 MasterLabel: Account Update
+    //FullName: "Account_Update-2" MasterLabel: "Account Update"
 
     //Metadata notes: capable of bringing back all of the details surrounding a Process Builder such as actions and decisions. 
     //While this class is capable of much in the area of Metadata, my initial interest is in the ObjectType which I believe will be useful for the end user
@@ -28,9 +29,9 @@ public with sharing class RestApiUtil {
         return getBaseFlowClassList().values();
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public static List<FlowClass> getLatestFlowsDetailed(Integer pLimit){
+    public static List<FlowClass> getLatestFlowsDetailed(){
         List<FlowClass> lstRetVal; 
-        return getDetailedFlowClassList(pLimit);
+        return getDetailedFlowClassList();
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static map<ID,FlowClass> getBaseFlowClassList(){
@@ -52,24 +53,20 @@ public with sharing class RestApiUtil {
        return mapIdToFlowClass;
    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    private static List<FlowClass> getDetailedFlowClassList(Integer pLimit){
+    private static List<FlowClass> getDetailedFlowClassList(){
         //reggie, I need to come up with a plan for using pLimit
         //as we know, I can only make 99 of these...any SF customer with more than that will have issues with the way it is today
         List<FlowClass> lstRetVal = new List<FlowClass>();
         //getBaseFlowClassList() will return mapIdToFlowClass and we know that all the Keys on that are just the most recent versions
         List<String> listLatestIdsWithoutDetail = getLatestVersionNotHavingDetail(getBaseFlowClassList().values());
 
-        Integer iLimit = pLimit;
-        if (listLatestIdsWithoutDetail.size()<pLimit){
-            iLimit = listLatestIdsWithoutDetail.size();
-        }
         //NOTE, that I can't retrieve the Metadata in a massive call, it's got to happen one at a time
-        integer i = 0;
+
         for(string myId:listLatestIdsWithoutDetail) {
-            i++;
-            if (i>iLimit){
+            if (Limits.getLimitCallouts()==0){
                 break;
             }
+           
             String strQueryWithMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+fullName,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+Metadata,+lastmodifieddate,+lastModifiedById,+createddate,+createdById+FROM+flow+WHERE+id+=+\''+myId+'\'';
             String strThisDetailedFlow;
             //we can't make callouts from test, so.... 
