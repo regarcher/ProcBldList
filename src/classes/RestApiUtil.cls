@@ -33,6 +33,25 @@ public with sharing class RestApiUtil {
         return getDetailedFlowClassList(pLimit);
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private static map<ID,FlowClass> getBaseFlowClassList(){
+        //Note that all versions and status are included here
+        //I'm sorting by Version to make life easier on me. I'm expecting the display component to do it's own sorting on LastModifiedDate
+        if (mapIdToFlowClass==null || mapIdToFlowClass.size()==0){
+            String strBaseQueryMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+lastmodifieddate,+lastModifiedById+FROM+flow+where+ProcessType+=+\'Workflow\'++order+by+lastmodifieddate+desc';
+            String strAllFlows;
+            //we can't make callouts from test, so.... 
+            if (Test.isRunningTest()){
+                strAllFlows = TestDataFactory.getBaseRestResponse();
+            }else{
+                strAllFlows = getJsonGetResponse(strBaseQueryMetadata);
+            }
+            String strAllFlowsTrimmed = strAllFlows.substring(strAllFlows.indexof('['),strAllFlows.length()-1);
+            List<FlowClass> lstLocalFlowClasses = (List<FlowClass>) json.deserialize(strAllFlowsTrimmed, List<FlowClass>.class);
+            buildParentChildStructure(lstLocalFlowClasses);
+        }
+       return mapIdToFlowClass;
+   }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static List<FlowClass> getDetailedFlowClassList(Integer pLimit){
         //reggie, I need to come up with a plan for using pLimit
         //as we know, I can only make 99 of these...any SF customer with more than that will have issues with the way it is today
@@ -81,10 +100,12 @@ public with sharing class RestApiUtil {
    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static List<string> getLatestVersionIds(List<FlowClass> pLstFlowClass){
-        //note that the soql statement sorts by version asc, so we're trusting that these will be in order
+        //keep in mind that our Base soql query did an order by lastmodifieddate desc
         map<String, String> mapFlowNameToId = new map<String, String>();
         for (FlowClass myFC:pLstFlowClass){
-            mapFlowNameToId.put(myFC.MasterLabel, myFC.Id);
+            if ( mapFlowNameToId.get(myFC.MasterLabel)==null){
+                mapFlowNameToId.put(myFC.MasterLabel, myFC.Id);
+            }
         }
         return mapFlowNameToId.values();
     }
@@ -99,25 +120,7 @@ public with sharing class RestApiUtil {
         }
        return lstRetVal;
     }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private static map<ID,FlowClass> getBaseFlowClassList(){
-        //Note that all versions and status are included here
-        //I'm sorting by Version to make life easier on me. I'm expecting the display component to do it's own sorting on LastModifiedDate
-        if (mapIdToFlowClass==null || mapIdToFlowClass.size()==0){
-            String strBaseQueryMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+lastmodifieddate,+lastModifiedById+FROM+flow+where+ProcessType+=+\'Workflow\'++order+by+VersionNumber+asc';
-            String strAllFlows;
-            //we can't make callouts from test, so.... 
-            if (Test.isRunningTest()){
-                strAllFlows = TestDataFactory.getBaseRestResponse();
-            }else{
-                strAllFlows = getJsonGetResponse(strBaseQueryMetadata);
-            }
-            String strAllFlowsTrimmed = strAllFlows.substring(strAllFlows.indexof('['),strAllFlows.length()-1);
-            List<FlowClass> lstLocalFlowClasses = (List<FlowClass>) json.deserialize(strAllFlowsTrimmed, List<FlowClass>.class);
-            buildParentChildStructure(lstLocalFlowClasses);
-        }
-       return mapIdToFlowClass;
-   }
+    
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static map<ID,FlowClass> buildParentChildStructure(List<FlowClass> pLstFlowClass){
        //I'm expecting that this will only get called from the Base query method, Detail queries should only be augmenting the latest versions
