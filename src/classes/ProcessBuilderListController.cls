@@ -12,6 +12,7 @@ public with sharing class ProcessBuilderListController {
         try{
             List<FlowClass> lstAllBaseFlows = RestApiUtil.getBaseFlows();
             List<FlowSummary> lstFlowSummary = getFlowSummaryList(lstAllBaseFlows);
+            debugPrintResults(lstFlowSummary);
             lRetVal = JSON.serialize(lstFlowSummary);
         }catch(Exception ex){
             System.debug(LoggingLevel.warn, 'ex: '+ ex + ' STACKTRACE: '+ex.getStackTraceString());
@@ -29,6 +30,7 @@ public with sharing class ProcessBuilderListController {
         Try{
             List<FlowClass> lstFlowClass = RestApiUtil.getLatestFlowsDetailed(pLimit);
             List<FlowSummary> lstFlowSummary = getFlowSummaryList(lstFlowClass);
+            debugPrintResults(lstFlowSummary);
             lRetVal = JSON.serialize(lstFlowSummary);
         }catch(Exception ex){
             System.debug(LoggingLevel.warn, 'ex: '+ ex + ' STACKTRACE: '+ex.getStackTraceString());
@@ -37,11 +39,24 @@ public with sharing class ProcessBuilderListController {
         return lRetVal;
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private static void debugPrintResults(List<FlowSummary> pLstFlowSummary){
+        for (FlowSummary myFS:pLstFlowSummary){
+            System.debug(LoggingLevel.warn, 'NAME: '+myFS.Name+' VERSION: '+myFS.Version);
+            if (myFS.OlderVersions!=null){
+                for (FlowSummary myFSOV:myFS.OlderVersions){
+                    System.debug(LoggingLevel.warn, '......OLDER VERSION NAME: '+myFSOV.Name+' OLDER VERSION: '+myFSOV.Version);
+                    //System.debug(LoggingLevel.warn, 'OLDER VERSION '+myFSOV);
+                }
+            }
+        }
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static List<FlowSummary> getFlowSummaryList(List<FlowClass> pLstFlowClass){
         List<FlowSummary> lstRetVal = new List<FlowSummary>();
         Set<String> setUserIds = new Set<String>();
         for (FlowClass myFC:pLstFlowClass){
-            setUserIds.add(myFC.LastModifiedById); 
+            setUserIds.add(myFC.LastModifiedById);
+            setUserIds.add(myFC.CreatedById); 
         }
         getUsers(setUserIds);
         for (FlowClass myFC:pLstFlowClass){
@@ -55,7 +70,9 @@ public with sharing class ProcessBuilderListController {
         if (pFlowClass.OlderVersions!=null && pFlowClass.OlderVersions.size()>0){
             myFS.OlderVersions = new List<FlowSummary>();
             for (FlowClass thisOlderVersion:pFlowClass.OlderVersions){
-                myFS.OlderVersions.add(buildFlowSummary(thisOlderVersion));
+                FlowSummary tempChild = buildFlowSummary(thisOlderVersion);
+                tempChild.ObjectName = '';
+                myFS.OlderVersions.add(tempChild);
             }
         }
         myFS.recId = pFlowClass.Id;
@@ -64,7 +81,10 @@ public with sharing class ProcessBuilderListController {
         myFS.Status = pFlowClass.Status;
         myFS.LastModifiedDate = pFlowClass.Lastmodifieddate.left(19);
         myFS.LastModifiedByName = mapIdToUser.get(pFlowClass.LastModifiedById).name;
+        myFS.CreatedDate = pFlowClass.CreatedDate.left(19);
+        myFS.CreatedByName = mapIdToUser.get(pFlowClass.CreatedById).name;
         myFS.Version = pFlowClass.VersionNumber;
+        myFS.ObjectName = 'Not Retrieved Yet';
 
         if (pFlowClass.MetaData!=null && pFlowClass.MetaData.processMetadataValues!=null){
             for (FlowClass.FlowMetadataValue myFMV:pFlowClass.MetaData.processMetadataValues){
@@ -74,7 +94,6 @@ public with sharing class ProcessBuilderListController {
             }
         }
         myFS.FullName = pFlowClass.FullName;
-        System.debug('myFS: '+myFs);
         return myFS;
     }
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -104,6 +123,8 @@ public with sharing class ProcessBuilderListController {
         Public String Status;
         Public String LastModifiedDate;
         Public String LastModifiedByName;
+        Public String CreatedDate;
+        Public String CreatedByName;
         Public String ObjectName;
         Public String FullName;
         Public String Version;

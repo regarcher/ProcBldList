@@ -37,7 +37,7 @@ public with sharing class RestApiUtil {
         //Note that all versions and status are included here
         //I'm sorting by Version to make life easier on me. I'm expecting the display component to do it's own sorting on LastModifiedDate
         if (mapIdToFlowClass==null || mapIdToFlowClass.size()==0){
-            String strBaseQueryMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+lastmodifieddate,+lastModifiedById+FROM+flow+where+ProcessType+=+\'Workflow\'++order+by+lastmodifieddate+desc';
+            String strBaseQueryMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+lastmodifieddate,+lastModifiedById,+createddate,+createdById+FROM+flow+where+ProcessType+=+\'Workflow\'++order+by+lastmodifieddate+desc';
             String strAllFlows;
             //we can't make callouts from test, so.... 
             if (Test.isRunningTest()){
@@ -70,7 +70,7 @@ public with sharing class RestApiUtil {
             if (i>iLimit){
                 break;
             }
-            String strQueryWithMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+fullName,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+Metadata,+lastmodifieddate,+lastModifiedById+FROM+flow+WHERE+id+=+\''+myId+'\'';
+            String strQueryWithMetadata = '/services/data/v41.0/tooling/query?q=SELECT+Id,+Description,+fullName,+ManageableState,+MasterLabel,+ProcessType,+Status,+VersionNumber,+Metadata,+lastmodifieddate,+lastModifiedById,+createddate,+createdById+FROM+flow+WHERE+id+=+\''+myId+'\'';
             String strThisDetailedFlow;
             //we can't make callouts from test, so.... 
             if (!Test.isRunningTest()){
