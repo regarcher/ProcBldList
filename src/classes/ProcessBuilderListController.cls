@@ -41,7 +41,7 @@ public with sharing class ProcessBuilderListController {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static void debugPrintResults(List<FlowSummary> pLstFlowSummary){
         for (FlowSummary myFS:pLstFlowSummary){
-            System.debug(LoggingLevel.warn, 'NAME: '+myFS.Name+' VERSION: '+myFS.Version);
+            System.debug(LoggingLevel.warn, 'NAME: '+myFS.Name+' VERSION: '+myFS.Version+' ObjectName: '+myFS.ObjectName);
             if (myFS.OlderVersions!=null){
                 for (FlowSummary myFSOV:myFS.OlderVersions){
                     System.debug(LoggingLevel.warn, '......OLDER VERSION NAME: '+myFSOV.Name+' OLDER VERSION: '+myFSOV.Version);
