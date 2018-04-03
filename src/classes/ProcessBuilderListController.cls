@@ -1,42 +1,42 @@
 public with sharing class ProcessBuilderListController {
     Private static map<ID,User> mapIdToUser;
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    @AuraEnabled
-    public static String getBaseFlowSummaryList(){
+    @AuraEnabled 
+    public static List<FlowSummary> getBaseFlowSummaryList(){
         //Only brings back fields that are available on the base query
         //This would NOT include FullName  or ObjectType
         //Of course name is still available, so objectType (objectName) is really the only deficiency
         //NOTE however as this package matures, we may pull a lot more off the Metadata response
         //The return value will be a JSON serialized string of List<FlowSummary>
-        String lRetVal;
+        List<FlowSummary> lstRetVal;
         try{
             List<FlowClass> lstAllBaseFlows = RestApiUtil.getBaseFlows();
-            List<FlowSummary> lstFlowSummary = getFlowSummaryList(lstAllBaseFlows);
-            debugPrintResults(lstFlowSummary);
-            lRetVal = JSON.serialize(lstFlowSummary);
+            lstRetVal = getFlowSummaryList(lstAllBaseFlows);
+            debugPrintResults(lstRetVal);
+            //lRetVal = JSON.serialize(lstFlowSummary);
         }catch(Exception ex){
             System.debug(LoggingLevel.warn, 'ex: '+ ex + ' STACKTRACE: '+ex.getStackTraceString());
             Throw new AuraHandledException('An error was encountered' + ex + ' STACKTRACE: '+ex.getStackTraceString());
         }
-        return lRetVal;
+        return lstRetVal;
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @AuraEnabled
-    public static String getDetailedFlowSummaryList(){
+    public static List<FlowSummary> getDetailedFlowSummaryList(){
         //This WILL include FullName (FullName) or ObjectType (ObjectName) for the Latest version only
         //OlderVersions may exist under the Latest Version, but they will not have ObjectName or FullName
         //The return value will be a JSON serialized string of List<FlowSummary>
-        String lRetVal;
+        List<FlowSummary> lstRetVal;
         Try{
             List<FlowClass> lstFlowClass = RestApiUtil.getLatestFlowsDetailed();
-            List<FlowSummary> lstFlowSummary = getFlowSummaryList(lstFlowClass);
-            debugPrintResults(lstFlowSummary);
-            lRetVal = JSON.serialize(lstFlowSummary);
+            lstRetVal = getFlowSummaryList(lstFlowClass);
+            debugPrintResults(lstRetVal);
+            //lRetVal = JSON.serialize(lstFlowSummary);
         }catch(Exception ex){
             System.debug(LoggingLevel.warn, 'ex: '+ ex + ' STACKTRACE: '+ex.getStackTraceString());
             Throw new AuraHandledException('An error was encountered' + ex + ' STACKTRACE: '+ex.getStackTraceString());
         }
-        return lRetVal;
+        return lstRetVal;
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static void debugPrintResults(List<FlowSummary> pLstFlowSummary){
