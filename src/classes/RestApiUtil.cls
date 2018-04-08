@@ -25,19 +25,19 @@ public with sharing class RestApiUtil {
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
     public static List<FlowClass> getBaseFlows(){
+        System.debug('RestApiUtil.getBaseFlows constructor');
         List<FlowClass> lstRetVal; 
-        String sessionId = getSessionId();
         //return getBaseFlowClassList().values();
         getBaseFlowClassList();
         return lstRetVal;
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public static List<FlowClass> getLatestFlowsDetailed(){
-        List<FlowClass> lstRetVal; 
-        String sessionId = getSessionId();
+        System.debug('RestApiUtil.getLatestFlowsDetailed');
+        //List<FlowClass> lstRetVal; 
         //return getDetailedFlowClassList();
-         getDetailedFlowClassList();
-        return lstRetVal;
+        return getDetailedFlowClassList();
+        //return lstRetVal;
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -103,6 +103,7 @@ public with sharing class RestApiUtil {
             mapIdToFlowClass.put(myFC.id, myFC);
         } 
         debugPrintResults(lstRetVal);
+        
         return mapIdToFlowClass.values();
    }
    
@@ -189,12 +190,13 @@ public with sharing class RestApiUtil {
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static String getSessionId() {
        //NOTE that sessionId can not be printed out on the Debug
-       System.debug('reggie orgID: '+ UserInfo.getOrganizationId().substring(0, 15) + ' reggie sessionID:' +  UserInfo.getSessionId().substring(15));
-       System.debug('reggie userName: '+UserInfo.getName());
+       //System.debug('orgID: '+ UserInfo.getOrganizationId().substring(0, 15) + ' sessionID:' +  UserInfo.getSessionId().substring(15));
+       //System.debug('reggie userName: '+UserInfo.getName());
        return UserInfo.getSessionId();
    }
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static void debugPrintResults(List<FlowClass> pLstFlowClass){
+        System.debug('in RestApiUtil.debugPrintResults with pLstFlowClass.size(): '+pLstFlowClass.size());
         for (FlowClass myFC:pLstFlowClass){
             System.debug(LoggingLevel.warn, 'MasterLabel: '+myFC.MasterLabel+' VersionNumber: '+myFC.VersionNumber);
             if (myFC.MetaData!=null && myFC.MetaData.processMetadataValues!=null){

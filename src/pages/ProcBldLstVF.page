@@ -1,0 +1,10 @@
+<apex:page controller="ProcessBuilderListVfController">
+    <apex:form >
+      <apex:pageMessages id="errors" />
+      <apex:pageBlock >
+        <apex:pageBlockTable value="{!lstFlowSummary}" var="mySum">
+          <apex:column value="{!mySum.name}"/>
+        </apex:pageBlockTable>
+      </apex:pageBlock>
+    </apex:form>
+</apex:page>

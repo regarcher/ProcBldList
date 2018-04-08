@@ -1,0 +1,19 @@
+<aura:component controller="ProcessBuilderListController" implements="force:appHostable,flexipage:availableForAllPageTypes" access="global" >
+	<!--note that both my Domain and my Namespace are defined as ProcBldList-->
+    <!--Your domain name is procbldlist-dev-ed.my.salesforce.com -->
+    <div class="slds-page-header">
+        <lightning:spinner aura:id="mySpinner" class="hide"/>
+    </div>
+    <!--https://developer.salesforce.com/docs/atlas.en-us.lightning.meta/lightning/events_one_demo_load.htm-->
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!-- this guy looks promising: http://sfdcmonkey.com/2016/11/17/access-apex-class-property-lightning-component/-->
+    <aura:attribute name="myFlowSummaryList" type="FlowSummary[]"/>
+     <lightning:layout >
+        <lightning:layoutItem padding="horizontal-medium" >
+            <aura:iteration var="myFlowSummary" items="{!v.myFlowSummaryList}">
+                <li>{!myFlowSummary.recId}</li>
+            </aura:iteration>
+        </lightning:layoutItem>
+    </lightning:layout>
+</aura:component>
