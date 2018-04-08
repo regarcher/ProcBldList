@@ -10,7 +10,7 @@ public with sharing class FlowSummary {
         @AuraEnabled Public String ObjectName {get;set;}
         @AuraEnabled Public String FullName {get;set;}
         @AuraEnabled Public String Version {get;set;}
-        //I doubt the next one will work :(
+        //reggie, I doubt the next one will work :(
         @AuraEnabled Public List<FlowSummary> OlderVersions {get;set;}
         public FlowSummary(){
             

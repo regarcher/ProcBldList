@@ -105,26 +105,7 @@ public with sharing class RestApiUtil {
         debugPrintResults(lstRetVal);
         return mapIdToFlowClass.values();
    }
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   private static void debugPrintResults(List<FlowClass> pLstFlowClass){
-        for (FlowClass myFC:pLstFlowClass){
-            System.debug(LoggingLevel.warn, 'MasterLabel: '+myFC.MasterLabel+' VersionNumber: '+myFC.VersionNumber);
-            if (myFC.MetaData!=null && myFC.MetaData.processMetadataValues!=null){
-                for (FlowClass.FlowMetadataValue myFMV:myFC.MetaData.processMetadataValues){
-                    if (myFMV.name=='ObjectType'){
-                        System.debug(LoggingLevel.warn, 'ObjectName: '+myFMV.value.stringValue);
-                    }
-                }
-            }
-            if (myFC.OlderVersions!=null){
-                for (FlowClass myFCOV:myFC.OlderVersions){
-                    System.debug(LoggingLevel.warn, '......OLDER VERSION NAME: '+myFCOV.MasterLabel+' OLDER VERSION: '+myFCOV.VersionNumber);
-                    //System.debug(LoggingLevel.warn, 'OLDER VERSION '+myFSOV);
-                }
-            }
-
-        }
-    }
+   
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static List<string> getLatestVersionIds(List<FlowClass> pLstFlowClass){
         //keep in mind that our Base soql query did an order by lastmodifieddate desc
@@ -213,7 +194,25 @@ public with sharing class RestApiUtil {
        return UserInfo.getSessionId();
    }
    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+   private static void debugPrintResults(List<FlowClass> pLstFlowClass){
+        for (FlowClass myFC:pLstFlowClass){
+            System.debug(LoggingLevel.warn, 'MasterLabel: '+myFC.MasterLabel+' VersionNumber: '+myFC.VersionNumber);
+            if (myFC.MetaData!=null && myFC.MetaData.processMetadataValues!=null){
+                for (FlowClass.FlowMetadataValue myFMV:myFC.MetaData.processMetadataValues){
+                    if (myFMV.name=='ObjectType'){
+                        System.debug(LoggingLevel.warn, 'ObjectName: '+myFMV.value.stringValue);
+                    }
+                }
+            }
+            if (myFC.OlderVersions!=null){
+                for (FlowClass myFCOV:myFC.OlderVersions){
+                    System.debug(LoggingLevel.warn, '......OLDER VERSION NAME: '+myFCOV.MasterLabel+' OLDER VERSION: '+myFCOV.VersionNumber);
+                    //System.debug(LoggingLevel.warn, 'OLDER VERSION '+myFSOV);
+                }
+            }
+
+        }
+    }
    /////////////////////////////////////// USEFUL REFERENCES ////////////////////////////////////////////////////////////////
     //Metadata API Developer Guide - FLOW record definition including sub classes
     // https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm
