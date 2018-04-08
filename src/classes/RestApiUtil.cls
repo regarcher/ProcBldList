@@ -25,15 +25,22 @@ public with sharing class RestApiUtil {
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
     public static List<FlowClass> getBaseFlows(){
-
-        return getBaseFlowClassList().values();
+        List<FlowClass> lstRetVal; 
+        String sessionId = getSessionId();
+        //return getBaseFlowClassList().values();
+        getBaseFlowClassList();
+        return lstRetVal;
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public static List<FlowClass> getLatestFlowsDetailed(){
         List<FlowClass> lstRetVal; 
-        return getDetailedFlowClassList();
+        String sessionId = getSessionId();
+        //return getDetailedFlowClassList();
+         getDetailedFlowClassList();
+        return lstRetVal;
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
    private static map<ID,FlowClass> getBaseFlowClassList(){
         //Note that all versions and status are included here
         //I'm sorting by Version to make life easier on me. I'm expecting the display component to do it's own sorting on LastModifiedDate
@@ -47,12 +54,14 @@ public with sharing class RestApiUtil {
                 strAllFlows = getJsonGetResponse(strBaseQueryMetadata);
             }
             String strAllFlowsTrimmed = strAllFlows.substring(strAllFlows.indexof('['),strAllFlows.length()-1);
+            System.debug(LoggingLevel.warn, 'strAllFlowsTrimmed: '+strAllFlowsTrimmed);
             List<FlowClass> lstLocalFlowClasses = (List<FlowClass>) json.deserialize(strAllFlowsTrimmed, List<FlowClass>.class);
             buildParentChildStructure(lstLocalFlowClasses);
         }
        return mapIdToFlowClass;
    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     private static List<FlowClass> getDetailedFlowClassList(){
         //reggie, I need to come up with a plan for using pLimit
         //as we know, I can only make 99 of these...any SF customer with more than that will have issues with the way it is today
@@ -93,8 +102,29 @@ public with sharing class RestApiUtil {
             myFC.hasDetail = true;
             mapIdToFlowClass.put(myFC.id, myFC);
         } 
+        debugPrintResults(lstRetVal);
         return mapIdToFlowClass.values();
    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   private static void debugPrintResults(List<FlowClass> pLstFlowClass){
+        for (FlowClass myFC:pLstFlowClass){
+            System.debug(LoggingLevel.warn, 'MasterLabel: '+myFC.MasterLabel+' VersionNumber: '+myFC.VersionNumber);
+            if (myFC.MetaData!=null && myFC.MetaData.processMetadataValues!=null){
+                for (FlowClass.FlowMetadataValue myFMV:myFC.MetaData.processMetadataValues){
+                    if (myFMV.name=='ObjectType'){
+                        System.debug(LoggingLevel.warn, 'ObjectName: '+myFMV.value.stringValue);
+                    }
+                }
+            }
+            if (myFC.OlderVersions!=null){
+                for (FlowClass myFCOV:myFC.OlderVersions){
+                    System.debug(LoggingLevel.warn, '......OLDER VERSION NAME: '+myFCOV.MasterLabel+' OLDER VERSION: '+myFCOV.VersionNumber);
+                    //System.debug(LoggingLevel.warn, 'OLDER VERSION '+myFSOV);
+                }
+            }
+
+        }
+    }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     private static List<string> getLatestVersionIds(List<FlowClass> pLstFlowClass){
         //keep in mind that our Base soql query did an order by lastmodifieddate desc
@@ -157,12 +187,18 @@ public with sharing class RestApiUtil {
        restRequest.setTimeout(120000);
 
        String sessionId = getSessionId();
-       String strUrl = URL.getSalesforceBaseUrl().toExternalForm()+pApiCall;
-
+       //reggie, this was the old call before we went to Named Credentials
+       //String strUrl = URL.getSalesforceBaseUrl().toExternalForm()+pApiCall;
+        //reggie, here's the setEndPoint...today our strUrl is the external base url + the api call... /services/data.... 
+        //reggie, but tomorrow, we want to use named credentials... for example setEndpoint('callout:***My_Named_Credential***/some_path');
+        //reggie, NOPE, this Named Creditial did not fix my problem :( It still works for Execute anonymous, but it still fails for the Lightning App
+        String strUrl = 'callout:Tooling_Api'+pApiCall;
        restRequest.setEndpoint(strUrl);
        restRequest.setMethod('GET');
        restRequest.setHeader('Content-Type', 'application/json');
+       //reggie, both Bearer and OAuth work for execute anonymous but fail for lighting app based call
        restRequest.setHeader('Authorization', 'Bearer '+ sessionId);
+       //restRequest.setHeader('Authorization', 'OAuth '+ pSessionId);
        HttpResponse callResponse;
        String responseBody;
         callResponse = httpCall.send(restRequest);
@@ -172,8 +208,12 @@ public with sharing class RestApiUtil {
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    private static String getSessionId() {
        //NOTE that sessionId can not be printed out on the Debug
+       System.debug('reggie orgID: '+ UserInfo.getOrganizationId().substring(0, 15) + ' reggie sessionID:' +  UserInfo.getSessionId().substring(15));
+       System.debug('reggie userName: '+UserInfo.getName());
        return UserInfo.getSessionId();
    }
+   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
    /////////////////////////////////////// USEFUL REFERENCES ////////////////////////////////////////////////////////////////
     //Metadata API Developer Guide - FLOW record definition including sub classes
     // https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_visual_workflow.htm
@@ -181,5 +221,20 @@ public with sharing class RestApiUtil {
     //https://developer.salesforce.com/docs/atlas.en-us.api_tooling.meta/api_tooling/tooling_api_objects_flow.htm
     //Notes on complex JSON deserialization
     //https://developer.salesforce.com/forums/?id=906F0000000D8MPIA0
+
+    //security and session notes... 
+    //"By security policy, sessions created by Lightning components aren’t enabled for API access"
+    //https://developer.salesforce.com/docs/atlas.en-us.lightning.meta/lightning/apex_api_calls.htm
+    //"Carefully review any code that uses a named credential to ensure you’re not creating a vulnerability."
+    //"You can also skip remote site settings, which are otherwise required for callouts to external sites, for the site defined in the named credential."
+    //"if an endpoint URL changes, you update only the named credential. All callouts that reference the named credential simply continue to work."
+    //https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_named_credentials.htm
+    //https://help.salesforce.com/articleView?id=named_credentials_define.htm&type=5
+    //this looked promising, but didn't seem to work either
+    //https://developer.salesforce.com/docs/atlas.en-us.lightning.meta/lightning/js_api_calls_platform.htm
+    //So, this page says that you simply can't do it without cheating
+    //https://salesforce.stackexchange.com/questions/110515/getting-session-id-in-lightning
+    //and if you have locker service turned on, this hack will simply fail
+
 
 }

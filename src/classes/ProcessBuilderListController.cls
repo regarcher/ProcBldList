@@ -20,6 +20,7 @@ public with sharing class ProcessBuilderListController {
         }
         return lstRetVal;
     }
+  
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     @AuraEnabled
     public static List<FlowSummary> getDetailedFlowSummaryList(){
@@ -116,6 +117,7 @@ public with sharing class ProcessBuilderListController {
         return mapIdToUser;
    }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /*
     Public class FlowSummary{
         Public String recId;
         Public String Name;
@@ -134,6 +136,7 @@ public with sharing class ProcessBuilderListController {
         }
             
     }
+    */
 
 
 }

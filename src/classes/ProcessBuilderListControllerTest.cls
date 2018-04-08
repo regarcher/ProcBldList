@@ -8,14 +8,13 @@ public with sharing class ProcessBuilderListControllerTest {
         //System.assertNotEquals(null, strSummaryListSerialized);
         //System.assertNotEquals(0, strSummaryListSerialized.length());
         //System.debug(LoggingLevel.warn, 'reggie strSummaryListSerialized: '+strSummaryListSerialized);
-        List<ProcessBuilderListController.FlowSummary> lstFlowSummary = ProcessBuilderListController.getBaseFlowSummaryList();
+        List<FlowSummary> lstFlowSummary = ProcessBuilderListController.getBaseFlowSummaryList();
         System.assertNotEquals(null, lstFlowSummary);
         System.assertNotEquals(0, lstFlowSummary.size());
-        for (ProcessBuilderListController.FlowSummary myFS:lstFlowSummary){
+        for (FlowSummary myFS:lstFlowSummary){
             System.debug(LoggingLevel.warn, 'reggie in TEST with FlowSummary: '+myFS);
         }
     }
-
     
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     static testmethod void testGetDetailedFlowSummaryList(){
@@ -25,10 +24,10 @@ public with sharing class ProcessBuilderListControllerTest {
         //System.assertNotEquals(null, strSummaryListSerialized);
         //System.assertNotEquals(0, strSummaryListSerialized.length());
         //System.debug(LoggingLevel.warn, 'reggie strSummaryListSerialized: '+strSummaryListSerialized);
-        List<ProcessBuilderListController.FlowSummary> lstFlowSummary = ProcessBuilderListController.getDetailedFlowSummaryList();
+        List<FlowSummary> lstFlowSummary = ProcessBuilderListController.getDetailedFlowSummaryList();
         System.assertNotEquals(null, lstFlowSummary);
         System.assertNotEquals(0, lstFlowSummary.size());
-        for (ProcessBuilderListController.FlowSummary myFS:lstFlowSummary){
+        for (FlowSummary myFS:lstFlowSummary){
             System.debug(LoggingLevel.warn, 'reggie in TEST with FlowSummary: '+myFS);
         }
     }
